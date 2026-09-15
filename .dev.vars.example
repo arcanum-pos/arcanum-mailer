@@ -1,0 +1,16 @@
+# Copy this file to .dev.vars and fill in your values.
+# .dev.vars is git-ignored and must never be committed.
+
+# The outbound SMTP account this deployment sends from. A personal Gmail
+# account + an app password (needs 2-step verification turned on first)
+# works fine: smtp.gmail.com, port 587.
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-account@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM_ADDRESS=your-account@gmail.com
+SMTP_FROM_NAME=Questo
+
+# Authorizes worker's calls to this Worker's /send route — must match
+# worker's own MAILER_INTERNAL_KEY.
+MAILER_INTERNAL_KEY=change-me-to-a-long-random-value

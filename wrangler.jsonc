@@ -1,0 +1,21 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "questo-mail",
+	"main": "src/index.ts",
+	// Not publicly reachable, same reasoning as `worker`'s own pin — this
+	// Worker holds real SMTP credentials and a send capability, gated by
+	// MAILER_INTERNAL_KEY but still not something to leave on the open
+	// internet if it doesn't need to be. Reached only by `worker`'s own
+	// service binding.
+	"workers_dev": false,
+	"compatibility_date": "2026-09-15",
+	"dev": {
+		// Next free port after questo-console's 8791/9791 — see LOCAL_DEV.md
+		// in the questo folder for the full port map across all Workers.
+		"port": 8792,
+		"inspector_port": 9792
+	},
+	"observability": {
+		"enabled": true
+	}
+}
