@@ -28,14 +28,19 @@ async function handleSend(request: Request, env: Env): Promise<Response> {
   if (!body || !body.to || !body.subject || (!body.text && !body.html)) {
     return json({ error: 'to, subject, and at least one of text/html are required' }, 400);
   }
+  const c = body.credentials;
+  if (!c || !c.host || !c.port || !c.username || !c.password || !c.fromAddress) {
+    return json({ error: 'credentials (host, port, username, password, fromAddress) are required' }, 400);
+  }
 
   try {
-    await sendEmail(env, body);
+    await sendEmail(body);
     return json({ ok: true });
   } catch (err) {
-    // The caller (worker) already treats this as best-effort and never
-    // fails its own primary action on a send failure — but it still needs
-    // to know it failed, for logging/retry decisions on its side.
+    // The caller (worker) decides for itself whether a send failure is
+    // best-effort (invite email — never fail invite creation over it) or
+    // should be surfaced (a test-send) — either way it needs to know
+    // whether this actually worked.
     return json({ error: 'Failed to send email', details: (err as Error).message }, 502);
   }
 }

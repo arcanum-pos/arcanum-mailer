@@ -1,6 +1,18 @@
 import { WorkerMailer } from './mailer';
 import type { EmailOptions, User } from './mailer';
-import type { Env } from './env';
+
+// No SMTP secrets on this Worker's own env — every send carries the full
+// connection details for whichever org's config resolved on the caller's
+// side. Keeps this Worker a genuinely generic transport rather than tied
+// to one platform-wide SMTP identity.
+export interface SmtpCredentials {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  fromAddress: string;
+  fromName?: string | null;
+}
 
 export interface SendEmailRequest {
   to: string | string[] | User | User[];
@@ -10,11 +22,12 @@ export interface SendEmailRequest {
   text?: string;
   html?: string;
   replyTo?: string | User;
-  // Overrides SMTP_FROM_NAME for this one send (e.g. "Questo — Elewijtse
-  // Pijl" for one org's invites vs. a generic default) — the underlying
-  // From address always stays SMTP_FROM_ADDRESS.
+  // Overrides credentials.fromName for this one send (e.g. "Questo —
+  // Elewijtse Pijl" for one org's invites vs. its own configured default)
+  // — the underlying From address always stays credentials.fromAddress.
   fromName?: string;
   attachments?: { filename: string; content: string; mimeType?: string }[];
+  credentials: SmtpCredentials;
 }
 
 function domainOf(email: string): string {
@@ -23,12 +36,11 @@ function domainOf(email: string): string {
   return domain;
 }
 
-export async function sendEmail(env: Env, request: SendEmailRequest): Promise<void> {
-  const port = Number(env.SMTP_PORT);
-  if (!Number.isInteger(port)) throw new Error(`Invalid SMTP_PORT: ${env.SMTP_PORT}`);
+export async function sendEmail(request: SendEmailRequest): Promise<void> {
+  const { credentials } = request;
 
   const email: EmailOptions = {
-    from: { name: request.fromName ?? env.SMTP_FROM_NAME, email: env.SMTP_FROM_ADDRESS },
+    from: { name: request.fromName ?? credentials.fromName ?? undefined, email: credentials.fromAddress },
     to: request.to,
     cc: request.cc,
     bcc: request.bcc,
@@ -41,14 +53,14 @@ export async function sendEmail(env: Env, request: SendEmailRequest): Promise<vo
 
   await WorkerMailer.send(
     {
-      host: env.SMTP_HOST,
-      port,
+      host: credentials.host,
+      port: credentials.port,
       // 465 is always implicit TLS; everything else (587 typically) starts
       // plaintext and upgrades via STARTTLS, which is the mailer's default.
-      secure: port === 465,
-      credentials: { username: env.SMTP_USER, password: env.SMTP_PASS },
+      secure: credentials.port === 465,
+      credentials: { username: credentials.username, password: credentials.password },
       authType: ['login', 'plain'],
-      clientName: domainOf(env.SMTP_FROM_ADDRESS),
+      clientName: domainOf(credentials.fromAddress),
     },
     email
   );
