@@ -169,7 +169,10 @@ export class Email {
     }
   }
 
-  public getEmailData() {
+  // The full RFC 2822 message, with no SMTP-DATA framing — what the Gmail
+  // API's `raw` field (and anything else that isn't talking raw SMTP)
+  // wants. getEmailData() below is this plus the SMTP dot-terminator.
+  public getRawMessage() {
     this.resolveHeader()
 
     const headersArray: string[] = ['MIME-Version: 1.0']
@@ -234,9 +237,16 @@ export class Email {
         emailData += '\r\n\r\n'
       }
     }
-    emailData += `--${mixedBoundary}--\r\n.\r\n`
+    emailData += `--${mixedBoundary}--\r\n`
 
     return emailData
+  }
+
+  // SMTP DATA framing needs a trailing lone "." line to signal end-of-message
+  // — not part of the message itself, so getRawMessage() (used by anything
+  // that isn't raw SMTP, e.g. the Gmail API) doesn't include it.
+  public getEmailData() {
+    return `${this.getRawMessage()}.\r\n`
   }
 
   private generateSafeBoundary(prefix: string): string {

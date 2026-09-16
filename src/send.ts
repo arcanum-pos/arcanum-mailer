@@ -14,7 +14,9 @@ export interface SmtpCredentials {
   fromName?: string | null;
 }
 
-export interface SendEmailRequest {
+// Shared by both transports (see gmail-api.ts) — everything about the
+// message itself, independent of how it actually gets sent.
+export interface MailMessage {
   to: string | string[] | User | User[];
   cc?: string | string[] | User | User[];
   bcc?: string | string[] | User | User[];
@@ -27,6 +29,9 @@ export interface SendEmailRequest {
   // — the underlying From address always stays credentials.fromAddress.
   fromName?: string;
   attachments?: { filename: string; content: string; mimeType?: string }[];
+}
+
+export interface SendEmailRequest extends MailMessage {
   credentials: SmtpCredentials;
 }
 
