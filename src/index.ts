@@ -1,10 +1,10 @@
-// questo-mail: the platform's outbound email transport, kept deliberately
+// arcanum-mailer: the platform's outbound email transport, kept deliberately
 // separate from `worker` — a raw-TCP SMTP client is a different kind of
 // thing from an HTTP request handler, and this Worker never touches
 // payment/org data, only whatever content a caller hands it to send. Not
 // publicly reachable (workers_dev: false); the only path in is `worker`'s
 // own service binding, gated by MAILER_INTERNAL_KEY the same way `worker`
-// gates its own /devices/broadcast route for questo-devicehub.
+// gates its own /devices/broadcast route for arcanum-devicehub.
 import type { Env } from './env';
 import { sendEmail, type MailMessage, type SmtpCredentials } from './send';
 import { sendViaGmailApi, type GmailApiCredentials } from './gmail-api';
@@ -90,7 +90,7 @@ export default {
 
       return json({ error: 'Not found' }, 404);
     } catch (err) {
-      return json({ error: 'Unexpected questo-mail error', details: (err as Error).message }, 502);
+      return json({ error: 'Unexpected arcanum-mailer error', details: (err as Error).message }, 502);
     }
   },
 };
