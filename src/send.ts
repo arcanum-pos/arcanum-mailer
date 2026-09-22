@@ -24,7 +24,7 @@ export interface MailMessage {
   text?: string;
   html?: string;
   replyTo?: string | User;
-  // Overrides credentials.fromName for this one send (e.g. "Questo —
+  // Overrides credentials.fromName for this one send (e.g. "Arcanum —
   // Elewijtse Pijl" for one org's invites vs. its own configured default)
   // — the underlying From address always stays credentials.fromAddress.
   fromName?: string;

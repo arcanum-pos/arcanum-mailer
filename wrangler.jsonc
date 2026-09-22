@@ -10,8 +10,8 @@
 	"workers_dev": false,
 	"compatibility_date": "2026-09-15",
 	"dev": {
-		// Next free port after questo-console's 8791/9791 — see LOCAL_DEV.md
-		// in the questo folder for the full port map across all Workers.
+		// Next free port after arcanum-frontends' 8791/9791 — see LOCAL_DEV.md
+		// in the arcanum folder for the full port map across all Workers.
 		"port": 8792,
 		"inspector_port": 9792
 	},
