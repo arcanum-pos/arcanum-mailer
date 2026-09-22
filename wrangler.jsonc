@@ -1,6 +1,6 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "questo-mail",
+	"name": "arcanum-mailer",
 	"main": "src/index.ts",
 	// Not publicly reachable, same reasoning as `worker`'s own pin — this
 	// Worker holds real SMTP credentials and a send capability, gated by
