@@ -138,7 +138,7 @@ describe('Cloudflare Email Service', () => {
     const sent: any[] = [];
     const result = await PROVIDERS.cloudflare.send(
       settings,
-      { ...MESSAGE, to: ['jan@example.test', { email: 'an@example.test', name: 'An' }], replyTo: 'beheer@scouts.test', attachments: [{ filename: 'a.txt', content: btoa('hallo'), mimeType: 'text/plain' }] },
+      { ...MESSAGE, to: [{ email: 'jan@example.test' }, { email: 'an@example.test', name: 'An' }], replyTo: 'beheer@scouts.test', attachments: [{ filename: 'a.txt', content: btoa('hallo'), mimeType: 'text/plain' }] },
       binding(async (m) => (sent.push(m), { messageId: 'cf-1' }))
     );
     expect(result).toEqual({ id: 'cf-1' });
