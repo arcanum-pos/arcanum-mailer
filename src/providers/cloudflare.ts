@@ -17,19 +17,21 @@ interface EmailAddress {
 
 export interface SendEmailBinding {
   send(message: {
-    to: EmailAddress[];
-    from: EmailAddress;
+    to: (string | EmailAddress)[];
+    from: string | EmailAddress;
     subject: string;
     html?: string;
     text?: string;
-    cc?: EmailAddress[];
-    bcc?: EmailAddress[];
-    replyTo?: EmailAddress;
+    cc?: (string | EmailAddress)[];
+    bcc?: (string | EmailAddress)[];
+    replyTo?: string | EmailAddress;
     attachments?: { content: Uint8Array; filename: string; type: string; disposition: 'attachment' }[];
   }): Promise<{ messageId: string }>;
 }
 
-const address = (a: Address): EmailAddress => ({ email: emailOf(a), ...(nameOf(a) ? { name: nameOf(a) } : {}) });
+// A plain string without a name: the runtime refuses an { email } object
+// without `name` ("Incorrect type for the 'name' field"), whatever the docs say.
+const address = (a: Address): string | EmailAddress => (nameOf(a) ? { email: emailOf(a), name: nameOf(a)! } : emailOf(a));
 
 const fromBase64 = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
@@ -57,7 +59,7 @@ export const cloudflare: MailProvider<Settings> = {
     const name = m.fromName || s.fromName;
     try {
       const result = await binding.send({
-        from: { email: s.fromAddress, ...(name ? { name } : {}) },
+        from: name ? { email: s.fromAddress, name } : s.fromAddress,
         to: list(m.to).map(address),
         ...(m.cc ? { cc: list(m.cc).map(address) } : {}),
         ...(m.bcc ? { bcc: list(m.bcc).map(address) } : {}),

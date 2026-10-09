@@ -144,8 +144,9 @@ describe('Cloudflare Email Service', () => {
     expect(result).toEqual({ id: 'cf-1' });
     expect(sent[0]).toMatchObject({
       from: { email: 'kassa@scouts.test', name: 'Scouts Elewijt' },
-      to: [{ email: 'jan@example.test' }, { email: 'an@example.test', name: 'An' }],
-      replyTo: { email: 'beheer@scouts.test' },
+      // Without a name: a plain string (the runtime refuses { email } alone).
+      to: ['jan@example.test', { email: 'an@example.test', name: 'An' }],
+      replyTo: 'beheer@scouts.test',
       subject: 'Uitnodiging',
       text: 'Welkom',
       html: '<p>Welkom</p>',
@@ -153,6 +154,13 @@ describe('Cloudflare Email Service', () => {
     });
     expect(new TextDecoder().decode(sent[0].attachments[0].content)).toBe('hallo');
     expect(outbound).toEqual([]);
+  });
+
+  it('no sender name anywhere: every address a plain string', async () => {
+    const sent: any[] = [];
+    await PROVIDERS.cloudflare.send({ fromAddress: 'noreply@arcanum.test' }, { to: 'test-x@srv1.mail-tester.com', subject: 'Code', text: 'Je code' }, binding(async (m) => (sent.push(m), { messageId: 'cf-2' })));
+    expect(sent[0]).toMatchObject({ from: 'noreply@arcanum.test', to: ['test-x@srv1.mail-tester.com'] });
+    expect(JSON.stringify(sent[0])).not.toContain('"name"');
   });
 
   it("sorts the binding's errors into the contract's codes", async () => {
