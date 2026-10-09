@@ -1,5 +1,41 @@
 # arcanum-mailer
 
+Outbound e-mail for an Arcanum installation (and, as a copy,
+arcanum-platform-mailer for login.kaboutersoft.be). Not publicly reachable:
+only a service binding, with `MAILER_INTERNAL_KEY`. It holds no mail
+account of its own — every request names the service and carries its
+settings. Design: `MAIL.md` in the arcanum folder.
+
+## The contract
+
+```
+POST /send   Authorization: Bearer MAILER_INTERNAL_KEY
+{ "message":  { "to", "subject", "text"?, "html"?, "fromName"?, "replyTo"?, "cc"?, "bcc"?, "attachments"? },
+  "provider": { "type": "smtp" | "gmail_api" | "brevo" | "resend", …its settings } }
+→ 200 { ok: true, id? }
+→ 400 { ok: false, code: "invalid_config", error, detail? }
+→ 502 { ok: false, code: "auth_failed" | "rejected" | "unreachable", error, detail? }
+```
+
+| type | settings |
+|---|---|
+| `smtp` | host, port, username, password, fromAddress, fromName? |
+| `gmail_api` | clientEmail, privateKey, impersonatedUser, fromName? |
+| `brevo` | apiKey, fromAddress, fromName? |
+| `resend` | apiKey, fromAddress, fromName? |
+
+The request shape from before (`{ provider?: "smtp" | "gmail_api",
+credentials, to, subject, … }`) is still accepted.
+
+## Adding a service
+
+1. `src/providers/<type>.ts`: a `MailProvider` — `validate(settings)`
+   (what's missing, `[]` = fine) and `send(settings, message, env)`, throwing
+   a `MailError` with one of the four codes.
+2. Its line in `src/providers/index.ts`.
+3. Its fields in arcanum-installer (Geavanceerd → E-mail).
+4. Tests in `test/mailer.test.ts`; copy `src/` to arcanum-platform-mailer.
+
 ## License
 
 Copyright (C) 2026 kaboutersoft.be
