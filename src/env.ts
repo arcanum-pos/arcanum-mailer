@@ -1,3 +1,5 @@
+import type { SendEmailBinding } from './providers/cloudflare';
+
 export interface Env {
   // Authorizes worker's calls to this Worker's /send route — a separate
   // secret from worker's own INTERNAL_API_KEY (devicehub) and
@@ -10,4 +12,7 @@ export interface Env {
   // everything going out under one platform-wide identity baked into this
   // Worker's own deployment.
   MAILER_INTERNAL_KEY: string;
+  // Cloudflare Email Service (providers/cloudflare.ts): the `send_email`
+  // binding. Absent where it isn't configured (arcanum-platform-mailer).
+  EMAIL?: SendEmailBinding;
 }

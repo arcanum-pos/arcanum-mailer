@@ -11,7 +11,7 @@ settings. Design: `MAIL.md` in the arcanum folder.
 ```
 POST /send   Authorization: Bearer MAILER_INTERNAL_KEY
 { "message":  { "to", "subject", "text"?, "html"?, "fromName"?, "replyTo"?, "cc"?, "bcc"?, "attachments"? },
-  "provider": { "type": "smtp" | "gmail_api" | "brevo" | "resend", …its settings } }
+  "provider": { "type": "smtp" | "gmail_api" | "brevo" | "resend" | "cloudflare", …its settings } }
 → 200 { ok: true, id? }
 → 400 { ok: false, code: "invalid_config", error, detail? }
 → 502 { ok: false, code: "auth_failed" | "rejected" | "unreachable", error, detail? }
@@ -23,6 +23,7 @@ POST /send   Authorization: Bearer MAILER_INTERNAL_KEY
 | `gmail_api` | clientEmail, privateKey, impersonatedUser, fromName? |
 | `brevo` | apiKey, fromAddress, fromName? |
 | `resend` | apiKey, fromAddress, fromName? |
+| `cloudflare` | fromAddress, fromName? — Cloudflare Email Service through this Worker's `send_email` binding (`EMAIL`); the domain onboarded in the same account, Workers Paid to send to anyone |
 
 The request shape from before (`{ provider?: "smtp" | "gmail_api",
 credentials, to, subject, … }`) is still accepted.

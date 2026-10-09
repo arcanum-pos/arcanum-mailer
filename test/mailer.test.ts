@@ -47,8 +47,8 @@ describe('the contract', () => {
     expect(outbound).toEqual([]);
   });
 
-  it('every service is a plug-in: SMTP, Gmail API, Brevo and Resend are registered', () => {
-    expect(Object.keys(PROVIDERS).sort()).toEqual(['brevo', 'gmail_api', 'resend', 'smtp'])
+  it('every service is a plug-in: SMTP, Gmail API, Brevo, Resend and Cloudflare Email Service are registered', () => {
+    expect(Object.keys(PROVIDERS).sort()).toEqual(['brevo', 'cloudflare', 'gmail_api', 'resend', 'smtp'])
   });
 
   it('a plug-in that throws something unexpected: unreachable, with what it said', async () => {
@@ -127,5 +127,49 @@ describe('SMTP', () => {
     expect(classify(new Error('550 5.1.1 recipient rejected')).code).toBe('rejected');
     expect(classify(new Error('Socket closed unexpectedly')).code).toBe('unreachable');
     expect(classify(new Error('x'))).toBeInstanceOf(MailError);
+  });
+});
+
+describe('Cloudflare Email Service', () => {
+  const settings = { fromAddress: 'kassa@scouts.test', fromName: 'Arcanum' };
+  const binding = (send: (m: any) => Promise<{ messageId: string }>) => ({ ...env, EMAIL: { send } });
+
+  it('sends through the send_email binding, the message mapped to its shape', async () => {
+    const sent: any[] = [];
+    const result = await PROVIDERS.cloudflare.send(
+      settings,
+      { ...MESSAGE, to: ['jan@example.test', { email: 'an@example.test', name: 'An' }], replyTo: 'beheer@scouts.test', attachments: [{ filename: 'a.txt', content: btoa('hallo'), mimeType: 'text/plain' }] },
+      binding(async (m) => (sent.push(m), { messageId: 'cf-1' }))
+    );
+    expect(result).toEqual({ id: 'cf-1' });
+    expect(sent[0]).toMatchObject({
+      from: { email: 'kassa@scouts.test', name: 'Scouts Elewijt' },
+      to: [{ email: 'jan@example.test' }, { email: 'an@example.test', name: 'An' }],
+      replyTo: { email: 'beheer@scouts.test' },
+      subject: 'Uitnodiging',
+      text: 'Welkom',
+      html: '<p>Welkom</p>',
+      attachments: [{ filename: 'a.txt', type: 'text/plain', disposition: 'attachment' }],
+    });
+    expect(new TextDecoder().decode(sent[0].attachments[0].content)).toBe('hallo');
+    expect(outbound).toEqual([]);
+  });
+
+  it("sorts the binding's errors into the contract's codes", async () => {
+    const failing = (code: string) => binding(async () => { throw Object.assign(new Error('nope'), { code }) });
+    const codeOf = async (code: string) => PROVIDERS.cloudflare.send(settings, MESSAGE, failing(code)).catch((e: MailError) => e.code);
+    expect(await codeOf('E_SENDER_DOMAIN_NOT_AVAILABLE')).toBe('invalid_config');
+    expect(await codeOf('E_SENDER_NOT_VERIFIED')).toBe('invalid_config');
+    expect(await codeOf('E_RECIPIENT_NOT_ALLOWED')).toBe('rejected');
+    expect(await codeOf('E_RATE_LIMIT_EXCEEDED')).toBe('unreachable');
+    expect(await codeOf('E_VALIDATION_ERROR')).toBe('rejected');
+  });
+
+  it('without the binding: invalid_config; without a sender: invalid_config, nothing tried', async () => {
+    const res = await handleSend(new Request('https://mailer/send', { method: 'POST', headers: KEY, body: JSON.stringify({ message: MESSAGE, provider: { type: 'cloudflare', ...settings } }) }), { ...env, EMAIL: undefined });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ ok: false, code: 'invalid_config' });
+    const noFrom = await send({ message: MESSAGE, provider: { type: 'cloudflare' } });
+    expect(await noFrom.json()).toMatchObject({ code: 'invalid_config', detail: 'fromAddress is required' });
   });
 });

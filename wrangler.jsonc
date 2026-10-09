@@ -15,6 +15,11 @@
 		"port": 8792,
 		"inspector_port": 9792
 	},
+	// Cloudflare Email Service (src/providers/cloudflare.ts, MAIL.md phase
+	// 5): used only when an installation's MAIL_CONFIG says
+	// "provider": "cloudflare". Sending needs an onboarded domain and, to
+	// anyone but the account's verified addresses, Workers Paid.
+	"send_email": [{ "name": "EMAIL" }],
 	"observability": {
 		"enabled": true
 	}
