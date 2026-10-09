@@ -13,6 +13,6 @@ export interface Env {
   // Worker's own deployment.
   MAILER_INTERNAL_KEY: string;
   // Cloudflare Email Service (providers/cloudflare.ts): the `send_email`
-  // binding. Absent where it isn't configured (arcanum-platform-mailer).
+  // binding (wrangler.jsonc).
   EMAIL?: SendEmailBinding;
 }
