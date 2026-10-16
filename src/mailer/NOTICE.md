@@ -62,10 +62,18 @@ already works with) and replaced `node:crypto`'s `randomBytes`/`randomUUID`
 with the Web Crypto equivalents already global in Workers. Net effect:
 this Worker needs no compatibility flags at all.
 
+The connection is passed in (`options.connect`) instead of importing
+`cloudflare:sockets`, so the same client runs self-hosted on Node too —
+`src/platform/` gives it Cloudflare's socket or one built on Node's
+`net`/`tls` (SELF_HOSTING.md). It's also closed when the session can't be
+set up (a refused sign-in left it open upstream — harmless on a Worker,
+a leak in a Node process).
+
 ## Files
 
 - `mailer.ts` — the SMTP client (connection, EHLO/STARTTLS/AUTH, the
-  MAIL/RCPT/DATA sequence). Modified: EHLO/HELO hostname, CRAM-MD5 removed.
+  MAIL/RCPT/DATA sequence). Modified: EHLO/HELO hostname, CRAM-MD5 removed,
+  the connection passed in.
 - `email.ts` — builds the MIME message from `EmailOptions`. Modified:
   header-value sanitization, RFC 2047 encoding for non-ASCII subjects/names,
   Web Crypto instead of `node:crypto`.

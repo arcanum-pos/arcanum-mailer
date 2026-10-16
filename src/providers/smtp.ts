@@ -1,8 +1,8 @@
 import { sendEmail, type SmtpCredentials } from '../send';
 import { MailError, required, type MailProvider } from './types';
 
-// Raw SMTP over cloudflare:sockets: STARTTLS on 587, TLS from the first
-// byte on 465 (send.ts). Works with e.g. iCloud+ (smtp.mail.me.com:587);
+// Raw SMTP over the runtime's socket (cloudflare:sockets, or Node's net/tls
+// self-hosted): STARTTLS on 587, TLS from the first byte on 465 (send.ts). Works with e.g. iCloud+ (smtp.mail.me.com:587);
 // Google refuses SMTP sign-ins from Workers' shared addresses — use the
 // gmail_api provider there.
 export const smtp: MailProvider<SmtpCredentials> = {
@@ -13,9 +13,9 @@ export const smtp: MailProvider<SmtpCredentials> = {
     if (!Number.isInteger(port) || port <= 0 || port > 65535) problems.push('port must be a port number');
     return problems;
   },
-  async send(s, message) {
+  async send(s, message, runtime) {
     try {
-      await sendEmail({ ...message, credentials: { ...s, port: Number(s.port) } });
+      await sendEmail({ ...message, credentials: { ...s, port: Number(s.port) } }, runtime.connect);
       return {};
     } catch (err) {
       throw classify(err as Error);

@@ -1,4 +1,5 @@
 import { WorkerMailer } from './mailer';
+import type { Connect } from './platform/types';
 import type { EmailOptions, User } from './mailer';
 
 // No SMTP secrets on this Worker's own env — every send carries the full
@@ -41,7 +42,7 @@ function domainOf(email: string): string {
   return domain;
 }
 
-export async function sendEmail(request: SendEmailRequest): Promise<void> {
+export async function sendEmail(request: SendEmailRequest, connect: Connect): Promise<void> {
   const { credentials } = request;
 
   const email: EmailOptions = {
@@ -66,6 +67,7 @@ export async function sendEmail(request: SendEmailRequest): Promise<void> {
       credentials: { username: credentials.username, password: credentials.password },
       authType: ['login', 'plain'],
       clientName: domainOf(credentials.fromAddress),
+      connect,
     },
     email
   );

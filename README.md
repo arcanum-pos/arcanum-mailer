@@ -37,6 +37,21 @@ credentials, to, subject, … }`) is still accepted.
 3. Its fields in arcanum-installer (Geavanceerd → E-mail).
 4. Tests in `test/mailer.test.ts`; copy `src/` to arcanum-platform-mailer.
 
+## Where it runs
+
+The same app (`src/app.ts`, Hono) runs in two places; only the runtime
+(`src/platform/`) differs:
+
+- **Cloudflare** (`src/index.ts`, wrangler's `main`): SMTP over
+  `cloudflare:sockets`, Cloudflare Email Service through the `EMAIL` binding.
+- **Self-hosted** (`src/node.ts`, `SELF_HOSTING.md`): a Node process —
+  `npm run build:node`, then `MAILER_INTERNAL_KEY=… PORT=8080 node dist/node.js`.
+  SMTP over Node's `net`/`tls` (a private CA: `NODE_EXTRA_CA_CERTS`); no
+  Cloudflare Email Service.
+
+`npm test` runs the same contract on both (`test/contract.ts`), plus SMTP's
+real conversation on Node against a small test server (`test/smtp-server.ts`).
+
 ## License
 
 Copyright (C) 2026 kaboutersoft.be

@@ -1,5 +1,5 @@
 // Based on zou-yu/worker-mailer v1.1.3 (MIT) — see NOTICE.md for the
-// original license and exactly what changed and why. Two changes from
+// original license and exactly what changed and why. Three changes from
 // upstream:
 //
 // 1. EHLO/HELO hostname was hardcoded to the literal string "127.0.0.1"
@@ -15,8 +15,12 @@
 //    Not needed: Gmail and every other provider this app targets support
 //    AUTH LOGIN/PLAIN over TLS, which an app password already works with.
 //    Removing it means this Worker needs no compatibility flags at all.
+// 3. The connection comes from `options.connect` instead of importing
+//    cloudflare:sockets, so the same client runs self-hosted on Node too
+//    (SELF_HOSTING.md) — and it's closed when the session can't be set up
+//    (a refused sign-in left it open).
 
-import { connect } from 'cloudflare:sockets'
+import type { Connect, TcpSocket } from '../platform/types'
 import { BlockingQueue, decode, encode, execTimeout } from './utils'
 import { Email, EmailOptions } from './email'
 import Logger, { LogLevel } from './logger'
@@ -27,6 +31,9 @@ export type Credentials = {
   password: string
 }
 export type WorkerMailerOptions = {
+  // Opens the TCP connection: cloudflare:sockets on a Worker, Node's
+  // net/tls self-hosted (platform/). Upstream imported cloudflare:sockets.
+  connect: Connect
   host: string
   port: number
   secure?: boolean
@@ -60,7 +67,7 @@ export type WorkerMailerOptions = {
 }
 
 export class WorkerMailer {
-  private socket: Socket
+  private socket: TcpSocket
 
   private readonly host: string
   private readonly port: number
@@ -126,7 +133,7 @@ export class WorkerMailer {
 
     this.socketTimeoutMs = options.socketTimeoutMs || 60_000
     this.responseTimeoutMs = options.socketTimeoutMs || 30_000
-    this.socket = connect(
+    this.socket = options.connect(
       {
         hostname: this.host,
         port: this.port,
@@ -151,7 +158,15 @@ export class WorkerMailer {
 
   static async connect(options: WorkerMailerOptions): Promise<WorkerMailer> {
     const mailer = new WorkerMailer(options)
-    await mailer.initializeSmtpSession()
+    try {
+      await mailer.initializeSmtpSession()
+    } catch (err) {
+      // A refused sign-in (or greeting, or TLS) leaves the connection open
+      // upstream; on a Worker the request's end tidies it up, in a Node
+      // process it would stay open for good.
+      mailer.socket.close().catch(() => {})
+      throw err
+    }
     mailer.start().catch(console.error)
     return mailer
   }

@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.node.json",
+  "include": [
+    "./contract.ts",
+    "./node.test.ts",
+    "./smtp-server.ts",
+    "../src/**/*.ts"
+  ],
+  "exclude": [
+    "../src/index.ts",
+    "../src/platform/cloudflare.ts"
+  ]
+}

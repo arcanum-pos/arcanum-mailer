@@ -53,8 +53,8 @@ export function classify(err: unknown): MailError {
 export const cloudflare: MailProvider<Settings> = {
   type: 'cloudflare',
   validate: (s) => required(s, ['fromAddress']),
-  async send(s, m, env) {
-    const binding = (env as { EMAIL?: SendEmailBinding } | undefined)?.EMAIL;
+  async send(s, m, runtime) {
+    const binding = runtime.email;
     if (!binding) throw new MailError('invalid_config', 'This mailer has no Cloudflare Email Service binding (EMAIL)');
     const name = m.fromName || s.fromName;
     try {

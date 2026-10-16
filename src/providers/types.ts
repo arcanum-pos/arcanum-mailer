@@ -1,3 +1,4 @@
+import type { Runtime } from '../platform/types';
 // The mailer's one contract, whatever service sends (MAIL.md, "The mailer
 // contract"): a message, and a provider { type, …its settings }. Each
 // service is a plug-in (src/providers/<type>.ts) in the registry
@@ -46,7 +47,8 @@ export interface MailProvider<Settings = Record<string, unknown>> {
   type: string;
   // What's missing or wrong in these settings; [] = fine.
   validate(settings: Record<string, unknown>): string[];
-  send(settings: Settings, message: OutgoingMessage, env: unknown): Promise<SendResult>;
+  // `runtime`: what the place it runs offers (a socket for SMTP, Cloudflare's binding).
+  send(settings: Settings, message: OutgoingMessage, runtime: Runtime): Promise<SendResult>;
 }
 
 // Helpers shared by the HTTP-API providers.
