@@ -45,7 +45,7 @@ The same app (`src/app.ts`, Hono) runs in two places; only the runtime
 - **Cloudflare** (`src/index.ts`, wrangler's `main`): SMTP over
   `cloudflare:sockets`, Cloudflare Email Service through the `EMAIL` binding.
 - **Self-hosted** (`src/node.ts`, `SELF_HOSTING.md`): a Node process —
-  `npm run build:node`, then `MAILER_INTERNAL_KEY=… PORT=8080 node dist/node.js`.
+  `npm run build:node`, then `MAILER_INTERNAL_KEY=… PORT=8080 node dist/node.mjs`.
   SMTP over Node's `net`/`tls` (a private CA: `NODE_EXTRA_CA_CERTS`); no
   Cloudflare Email Service.
 
