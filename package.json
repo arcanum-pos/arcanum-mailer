@@ -7,7 +7,7 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc && tsc -p tsconfig.node.json && tsc -p test && tsc -p test/tsconfig.node.json",
     "test": "vitest run",
-    "build:node": "esbuild src/node.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/node.js",
+    "build:node": "esbuild src/node.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/node.js --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\"",
     "start:node": "node dist/node.js"
   },
   "devDependencies": {
