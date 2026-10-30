@@ -1,5 +1,7 @@
 # arcanum-mailer
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/arcanum-pos/arcanum-mailer/badge)](https://scorecard.dev/viewer/?uri=github.com/arcanum-pos/arcanum-mailer)
+
 Outbound e-mail for an Arcanum installation (and, as a copy,
 arcanum-platform-mailer for login.kaboutersoft.be). Not publicly reachable:
 only a service binding, with `MAILER_INTERNAL_KEY`. It holds no mail
