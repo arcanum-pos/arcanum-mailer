@@ -57,7 +57,7 @@ export async function handleSend(request: Request, runtime: Runtime, providers: 
   if (!message?.to || (Array.isArray(message.to) && message.to.length === 0) || !message.subject || (!message.text && !message.html)) {
     return failure(new MailError('invalid_config', 'to, subject, and at least one of text/html are required'));
   }
-  const provider = providers[settings.type];
+  const provider = Object.hasOwn(providers, settings.type) ? providers[settings.type] : undefined;
   if (!provider) return failure(new MailError('invalid_config', `Unknown mail service "${settings.type}"`));
   const problems = provider.validate(settings);
   if (problems.length) return failure(new MailError('invalid_config', `The ${settings.type} settings are incomplete`, problems.join('; ')));

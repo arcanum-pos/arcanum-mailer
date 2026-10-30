@@ -13,7 +13,7 @@ export default defineConfig({
             miniflare: { bindings: { MAILER_INTERNAL_KEY: 'test-mailer-key' } },
           }),
         ],
-        test: { name: 'cloudflare', include: ['test/workers.test.ts'] },
+        test: { name: 'cloudflare', include: ['test/workers.test.ts', 'test/properties.test.ts'] },
       },
       {
         test: { name: 'node', environment: 'node', include: ['test/node.test.ts'] },

@@ -49,7 +49,8 @@ export async function smtpServer(opts: { implicitTls?: boolean; startTls?: boole
           inData = false;
           return say('250 2.0.0 queued');
         }
-        r.data += line + '\n';
+        // Dot-stuffing undone, as a real server does (RFC 5321 4.5.2).
+        r.data += (line.startsWith('.') ? line.slice(1) : line) + '\n';
         return;
       }
       const [verb] = line.split(' ');

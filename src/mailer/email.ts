@@ -14,6 +14,9 @@
 //    names) — this app is Dutch-language, so names/subjects routinely
 //    contain characters like é/ë/ï. encodeHeaderText() below encodes any
 //    non-ASCII value as a UTF-8 base64 encoded-word.
+// 3. No dot-stuffing (a body line "." ended the message early) and no
+//    quoting of display names with a comma or other special character —
+//    see getEmailData() and encodeDisplayName().
 //
 // Also: upstream used node:crypto (randomBytes/randomUUID) purely for
 // MIME boundaries and Message-ID — replaced with the Web Crypto
@@ -75,11 +78,22 @@ function encodeHeaderText(value: string): string {
   return `=?UTF-8?B?${toBase64Utf8(value)}?=`
 }
 
+// A display name with a special character in it ("Scouts, Elewijt") as a
+// quoted string — bare, its comma would split it into two addresses
+// (RFC 5322 3.2.3). Non-ASCII names are an encoded-word already.
+function encodeDisplayName(name: string): string {
+  // eslint-disable-next-line no-control-regex
+  if (/^[\x20-\x7E]*$/.test(name) && /[()<>[\]:;@\\,."]/.test(name)) {
+    return `"${name.replace(/[\\"]/g, '\\$&')}"`
+  }
+  return encodeHeaderText(name)
+}
+
 function formatAddress(user: User, fieldName: string): string {
   assertNoHeaderInjection(user.email, `${fieldName} email`)
   if (user.name) {
     assertNoHeaderInjection(user.name, `${fieldName} name`)
-    return `${encodeHeaderText(user.name)} <${user.email}>`
+    return `${encodeDisplayName(user.name)} <${user.email}>`
   }
   return user.email
 }
@@ -244,9 +258,12 @@ export class Email {
 
   // SMTP DATA framing needs a trailing lone "." line to signal end-of-message
   // — not part of the message itself, so getRawMessage() (used by anything
-  // that isn't raw SMTP, e.g. the Gmail API) doesn't include it.
+  // that isn't raw SMTP, e.g. the Gmail API) doesn't include it. A line of
+  // the message that starts with "." gets one more (RFC 5321 4.5.2, the
+  // server strips it again): otherwise a body line "." would end the
+  // message there, and ".NET" would arrive as "NET".
   public getEmailData() {
-    return `${this.getRawMessage()}.\r\n`
+    return `${this.getRawMessage().replace(/^\./gm, '..')}.\r\n`
   }
 
   private generateSafeBoundary(prefix: string): string {

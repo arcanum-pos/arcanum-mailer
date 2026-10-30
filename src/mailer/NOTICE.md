@@ -76,5 +76,7 @@ a leak in a Node process).
   the connection passed in.
 - `email.ts` — builds the MIME message from `EmailOptions`. Modified:
   header-value sanitization, RFC 2047 encoding for non-ASCII subjects/names,
-  Web Crypto instead of `node:crypto`.
+  quoted display names when they hold a special character (a comma),
+  dot-stuffing of the SMTP DATA (RFC 5321 4.5.2), Web Crypto instead of
+  `node:crypto`.
 - `utils.ts`, `logger.ts` — unmodified from upstream.
