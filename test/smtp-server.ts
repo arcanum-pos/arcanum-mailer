@@ -1,5 +1,5 @@
 // A tiny SMTP server for the Node tests: speaks just enough (EHLO,
-// STARTTLS, AUTH PLAIN, MAIL/RCPT/DATA, QUIT) to receive one message, and
+// STARTTLS, AUTH PLAIN and LOGIN, MAIL/RCPT/DATA, QUIT) to receive one message, and
 // records what it saw. TLS with the test's own certificate (fixtures/).
 import { readFileSync } from 'node:fs';
 import net from 'node:net';
@@ -31,8 +31,19 @@ export async function smtpServer(opts: { implicitTls?: boolean; startTls?: boole
     let current: net.Socket = socket;
     let buffer = '';
     let inData = false;
+    // AUTH LOGIN: the username and password come on lines of their own.
+    let login: string[] | null = null;
     const say = (line: string) => current.write(`${line}\r\n`);
     const handle = (line: string) => {
+      if (login) {
+        login.push(Buffer.from(line, 'base64').toString());
+        if (login.length === 1) return say('334 UGFzc3dvcmQ6');
+        const [username, password] = login;
+        login = null;
+        if (opts.password && password !== opts.password) return say('535 5.7.8 Username and Password not accepted');
+        r.auth = { username, password };
+        return say('235 2.7.0 Authentication successful');
+      }
       if (inData) {
         if (line === '.') {
           inData = false;
@@ -56,6 +67,10 @@ export async function smtpServer(opts: { implicitTls?: boolean; startTls?: boole
           return;
         }
         case 'AUTH': {
+          if (line.split(' ')[1]?.toUpperCase() === 'LOGIN') {
+            login = [];
+            return say('334 VXNlcm5hbWU6');
+          }
           const [, username, password] = Buffer.from(line.split(' ')[2], 'base64').toString().split('\0');
           if (opts.password && password !== opts.password) return say('535 5.7.8 Username and Password not accepted');
           r.auth = { username, password };

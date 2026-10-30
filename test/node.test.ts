@@ -2,8 +2,10 @@
 // Node runtime, and SMTP's real conversation — plain, STARTTLS and TLS
 // from the first byte — against a small SMTP server (smtp-server.ts),
 // through Node's net/tls socket (platform/node.ts).
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app';
+import { WorkerMailer } from '../src/mailer';
+import { LogLevel } from '../src/mailer/logger';
 import { nodeConnectWith, nodeRuntime } from '../src/platform/node';
 import { KEY, mailerContract } from './contract';
 import { CERT, smtpServer } from './smtp-server';
@@ -67,6 +69,37 @@ describe('SMTP on Node', () => {
       expect(server.received[0].from).toBeNull();
     } finally {
       await server.close();
+    }
+  });
+
+  it('even at the debug log level, the credentials never reach the log (AUTH PLAIN and LOGIN)', async () => {
+    for (const authType of ['plain', 'login'] as const) {
+      const server = await smtpServer();
+      const logged: string[] = [];
+      const debug = vi.spyOn(console, 'debug').mockImplementation((...args) => void logged.push(args.join(' ')));
+      try {
+        await WorkerMailer.send(
+          {
+            host: 'localhost',
+            port: server.port,
+            secure: false,
+            credentials: { username: 'kassa@scouts.test', password: 'geheim' },
+            authType: [authType],
+            clientName: 'scouts.test',
+            connect: nodeConnectWith({ ca: CERT }),
+            logLevel: LogLevel.DEBUG,
+          },
+          { from: { email: 'kassa@scouts.test' }, to: 'jan@example.test', subject: 'Test', text: 'Hallo' }
+        );
+        expect(server.received[0].auth, authType).toEqual({ username: 'kassa@scouts.test', password: 'geheim' });
+        const log = logged.join('\n');
+        expect(log, authType).toContain('Write to socket');
+        expect(log, authType).toContain('[credentials hidden]');
+        for (const secret of ['geheim', btoa('geheim'), btoa('\0kassa@scouts.test\0geheim')]) expect(log, `${authType} ${secret}`).not.toContain(secret);
+      } finally {
+        debug.mockRestore();
+        await server.close();
+      }
     }
   });
 

@@ -216,12 +216,13 @@ export class WorkerMailer {
     }
   }
 
-  private async writeLine(line: string) {
-    await this.write(`${line}\r\n`)
+  // `secret`: a line carrying the credentials (AUTH) - sent, never logged.
+  private async writeLine(line: string, secret = false) {
+    await this.write(`${line}\r\n`, secret)
   }
 
-  private async write(data: string) {
-    this.logger.debug('Write to socket:\n' + data)
+  private async write(data: string, secret = false) {
+    this.logger.debug('Write to socket:\n' + (secret ? '[credentials hidden]\r\n' : data))
     await this.writer.write(encode(data))
   }
 
@@ -392,7 +393,7 @@ export class WorkerMailer {
     const userPassBase64 = btoa(
       ` ${this.credentials!.username} ${this.credentials!.password}`,
     )
-    await this.writeLine(`AUTH PLAIN ${userPassBase64}`)
+    await this.writeLine(`AUTH PLAIN ${userPassBase64}`, true)
     const authResult = await this.readTimeout()
     if (!authResult.startsWith('2')) {
       throw new Error(`Failed to plain authentication: ${authResult}`)
@@ -407,14 +408,14 @@ export class WorkerMailer {
     }
 
     const usernameBase64 = btoa(this.credentials!.username)
-    await this.writeLine(usernameBase64)
+    await this.writeLine(usernameBase64, true)
     const userResponse = await this.readTimeout()
     if (!userResponse.startsWith('3')) {
       throw new Error('Failed to login authentication: ' + userResponse)
     }
 
     const passwordBase64 = btoa(this.credentials!.password)
-    await this.writeLine(passwordBase64)
+    await this.writeLine(passwordBase64, true)
     const authResult = await this.readTimeout()
     if (!authResult.startsWith('2')) {
       throw new Error('Failed to login authentication: ' + authResult)
